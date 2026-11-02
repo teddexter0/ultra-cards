@@ -4,9 +4,13 @@ export default async function handler(req,res){
   if(req.method!=='GET')return res.status(405).json({error:'Method not allowed'});
   const query=String(req.query.q||'').trim().slice(0,90),type=req.query.type==='video'?'video':'image';
   if(query.length<2)return res.status(400).json({error:'Enter at least two characters.'});
-  const provider=req.query.provider==='pixabay'?'pixabay':'pexels';
+  const provider=['pexels','pixabay'].includes(req.query.provider)?req.query.provider:'commons';
+  if(provider==='commons'){
+    if(type==='video')return res.status(400).json({error:'Choose Photos for Wikimedia Commons, or Pexels/Pixabay for video search.'});
+    try{const params=new URLSearchParams({action:'query',format:'json',generator:'search',gsrsearch:query+' filetype:bitmap',gsrnamespace:'6',gsrlimit:'12',prop:'imageinfo',iiprop:'url|extmetadata',iiurlwidth:'1000'});const response=await fetch('https://commons.wikimedia.org/w/api.php?'+params,{headers:{'User-Agent':'UltraCards/2.0 (https://ultra-cards.vercel.app)'},signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error();const data=await response.json();const clean=s=>String(s||'').replace(/<[^>]*>/g,'').replaceAll('&amp;','&').slice(0,300);return res.status(200).json({results:Object.values(data.query?.pages||{}).flatMap(p=>{const i=p.imageinfo?.[0];if(!i)return [];const m=i.extmetadata||{},license=clean(m.LicenseShortName?.value),author=clean(m.Artist?.value)||clean(p.title);if(!license)return [];return [{id:p.pageid,type:'image',url:i.thumburl||i.url,thumbnail:i.thumburl||i.url,credit:author+' · '+license,creditUrl:i.descriptionurl,sourceUrl:i.descriptionurl,provider:'Wikimedia Commons'}];})});}catch{return res.status(502).json({error:'The image library is temporarily unavailable. Try a simpler search or use your own photo.'});}
+  }
   const key=provider==='pexels'?process.env.PEXELS_API_KEY:process.env.PIXABAY_API_KEY;
-  if(!key)return res.status(503).json({error:`${provider==='pexels'?'Pexels':'Pixabay'} search is not connected yet. Use the free search link below, or paste a direct HTTPS media URL.`});
+  if(!key)return res.status(503).json({error:`${provider==='pexels'?'Pexels':'Pixabay'} search is not connected yet. Choose Wikimedia Commons to search now, or use the provider’s browse link below.`});
   try{
     let url,headers={};if(provider==='pexels'){url=type==='video'?'https://api.pexels.com/videos/search':'https://api.pexels.com/v1/search';url+='?'+new URLSearchParams({query,per_page:'12',orientation:'landscape'});headers.Authorization=key;}
     else url='https://pixabay.com/api/'+(type==='video'?'videos/':'')+'?'+new URLSearchParams({key,q:query,per_page:'12',safesearch:'true'});
