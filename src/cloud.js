@@ -1,9 +1,9 @@
 // The SDK is loaded only when Firebase is configured; guest creation needs no account.
 let auth,db,authSDK,dbSDK,config,calendarToken;
 export async function initCloud(onUser){
-  const response=await fetch('/firebase-config.json',{cache:'no-store'});if(!response.ok)return false;
-  config=await response.json();if(!config.apiKey||!config.projectId)return false;
-  const [appSDK,a,d]=await Promise.all([import('https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js'),import('https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js'),import('https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js')]);
+  const response=await fetch('/firebase-config.json',{cache:'no-store'});if(!response.ok)throw Error('Account configuration failed to load (HTTP '+response.status+').');
+  config=await response.json();if(!config.apiKey||!config.projectId)throw Error('Account configuration is incomplete.');
+  const sdk=await import('/firebase-sdk.js');const [appSDK,a,d]=[sdk,sdk,sdk];
   authSDK=a;dbSDK=d;const app=appSDK.initializeApp(config);auth=a.getAuth(app);db=d.getFirestore(app);a.onAuthStateChanged(auth,user=>{calendarToken=null;onUser(user);});return true;
 }
 function ready(){if(!auth)throw Error('Cloud accounts are not connected yet. You can create, save on this device, export, and share cards as a guest.');}
