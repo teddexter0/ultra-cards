@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5f1e9">
+  <meta name="description" content="Make someone feel beautifully seen. Personal, animated cards for the big days and the little just-becauses.">
+  <meta property="og:title" content="Ultra Cards — a little more personal.">
+  <meta property="og:description" content="A small occasion. An extraordinary feeling.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Ultra Cards — a little more personal.</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Space+Grotesk:wght@400;500;600;700&family=Caveat:wght@400;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to studio</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Ultra Cards home"><span class="brand-mark">✳</span> ultra<span class="brand-light">cards</span><span class="brand-dot">®</span></a>
+    <nav aria-label="Main navigation"><button data-nav="studio" class="active">The studio</button><button data-nav="occasions">On the horizon <span class="nav-dot"></span></button><button data-nav="saved">Your collection <span id="saved-count">0</span></button></nav>
+    <button id="account" class="account"><span class="avatar">U</span><span id="account-label">Sign in</span><span>↗</span></button>
+  </header>
+  <main id="main"></main>
+  <footer class="footer"><span><span class="brand-mark">✳</span> A little more personal.</span><span>Made for someone. Never just anyone.</span><button id="about">The small print ↗</button></footer>
+  <dialog id="modal"><div id="modal-content"></div><button id="modal-close" class="dialog-x" aria-label="Close dialog">×</button></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
