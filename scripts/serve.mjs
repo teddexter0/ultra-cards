@@ -9,6 +9,7 @@ const server=http.createServer(async(req,res)=>{
     let file=path.resolve(root,'.'+decodeURIComponent(url.pathname));
     if(!file.startsWith(root+path.sep)&&file!==root)throw new Error('Invalid path');
     if(url.pathname.startsWith('/api/')){res.writeHead(503,{'Content-Type':'application/json'});res.end(JSON.stringify({error:'Media search runs on the deployed site. Use the search links or your own image here.'}));return;}
+    if(['/firebase-config.json','/brand-ribbon.svg','/occasion-cache.json'].includes(url.pathname))file=path.join(root,'public',url.pathname.slice(1));
     if(!path.extname(file))file=path.join(root,'index.html');
     if((await stat(file)).isDirectory())file=path.join(file,'index.html');
     res.writeHead(200,{'Content-Type':types[path.extname(file)]||'application/octet-stream','Cache-Control':'no-cache'});res.end(await readFile(file));
