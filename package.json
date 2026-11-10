@@ -8,7 +8,15 @@
     "start": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check src/app.js && node --check src/engine.js && node --check src/calendar.js && node --check src/cloud.js"
+    "check": "node scripts/check.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "date-holidays": "3.38.0",
+    "firebase": "12.5.0",
+    "esbuild": "0.25.0",
+    "firebase-admin": "13.6.0"
+  }
 }

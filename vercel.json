@@ -1,7 +1,9 @@
 {
-  "buildCommand": "npm run build",
+  "installCommand": "npm install --ignore-scripts",
+  "buildCommand": "npm run check && npm test && npm run build",
   "outputDirectory": "dist",
   "framework": null,
+  "functions": {"api/gift-*.js":{"maxDuration":45}},
   "headers": [{"source":"/(.*)","headers":[{"key":"X-Content-Type-Options","value":"nosniff"},{"key":"Referrer-Policy","value":"strict-origin-when-cross-origin"},{"key":"X-Frame-Options","value":"DENY"}]}],
   "rewrites": [{"source":"/card/:path*","destination":"/index.html"}]
 }

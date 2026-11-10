@@ -1,0 +1,25 @@
+name: Refresh public occasion radar
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: public-occasion-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install reviewed holiday engine
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Refresh public country holidays and observances
+        run: node scripts/refresh-occasions.mjs
+        env:
+          PUBLISH_OCCASIONS: 'true'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
