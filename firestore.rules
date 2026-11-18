@@ -1,0 +1,31 @@
+// Prototype rules for a Standard edition Firestore database.
+// users/{uid} is a path namespace, not a profile document; its document is not used.
+// users/{uid}/cards/{id}: payload JSON string (1..60000 chars), updatedAt timestamp.
+// users/{uid}/people/{id}: payload JSON string (1..10000 chars), updatedAt timestamp.
+// Both are private to their authenticated owner. No roles, public queries, or public writes.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owns(uid) { return request.auth != null && request.auth.uid == uid; }
+    function validPayload(data, maximum) {
+      return data.keys().hasAll(['payload', 'updatedAt'])
+        && data.keys().hasOnly(['payload', 'updatedAt'])
+        && data.payload is string
+        && data.payload.size() > 0
+        && data.payload.size() <= maximum
+        && data.updatedAt is timestamp
+        && data.updatedAt == request.time;
+    }
+    match /users/{uid}/cards/{id} {
+      allow read, delete: if owns(uid);
+      allow create: if owns(uid) && validPayload(request.resource.data, 60000);
+      allow update: if owns(uid) && validPayload(request.resource.data, 60000);
+    }
+    match /users/{uid}/people/{id} {
+      allow read, delete: if owns(uid);
+      allow create: if owns(uid) && validPayload(request.resource.data, 10000);
+      allow update: if owns(uid) && validPayload(request.resource.data, 10000);
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

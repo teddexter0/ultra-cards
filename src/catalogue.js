@@ -1,0 +1,27 @@
+// 24 additional compositions; appended after the original 12 to preserve old links.
+export const extraScenes=[
+ ['ribbon','The Unfolding','Sculptural','Something lovely\nis unfolding.','#c4c0ff','#292752','#6153cd','〰','ribbon'],
+ ['ticket','Admit One','Playful','One ticket.\nEndless possibilities.','#ffda83','#463319','#997022','↗','ticket'],
+ ['moon','Moon Letter','Celestial','A whole little\nuniverse of you.','#1b2353','#ede6ff','#c4bcff','◐','mooncut'],
+ ['polaroid','The Good Old Days','Nostalgic','Some moments\nnever get old.','#ede3ce','#554733','#826b47','▧','polaroid'],
+ ['sculpture','Soft Geometry','Sculptural','Wonderfully\none of a kind.','#ccdcd3','#2b473d','#52816c','◍','sculpture'],
+ ['rendezvous','Rendezvous','Intimate','A little closer.\nA little more us.','#eac4d9','#65364e','#a45178','♡','split'],
+ ['festival','Full Volume','Playful','Big feelings.\nNo small print.','#deff7d','#293527','#5d712e','✺','bigtype'],
+ ['gallery','Gallery of You','Editorial','A masterpiece\nin progress.','#e4ddd5','#302b27','#8a6c55','▱','gallery'],
+ ['blueprint','The Next Chapter','Alpine','Dream bigger.\nYou belong there.','#a8cce0','#233b59','#3a6891','△','blueprint'],
+ ['cinema','The Premiere','Cinematic','Main character.\nEvery single day.','#272533','#f6e8cc','#d4ad74','▶','filmstrip'],
+ ['blossom','In Full Bloom','Botanical','Good things\ngrow around you.','#ebd1e3','#643d63','#8c5a87','❀','blossom'],
+ ['sunrise','Daybreak','Cinematic','Here comes\nyour golden hour.','#f4bb8d','#61402b','#b96936','◒','sunrise'],
+ ['origami','Paper Wishes','Sculptural','A little wish.\nA world of possibility.','#dbd8ef','#3e395b','#7d6caa','◇','origami'],
+ ['disco','Disco Hearts','Playful','You bring\nthe good energy.','#e8c8f2','#55385d','#9959ab','◎','disco'],
+ ['cobalt','Electric Kindness','Editorial','A big yes\nto being you.','#2545c7','#f7f0d7','#d1ee9f','↗','electric'],
+ ['desert','Desert Rose','Botanical','Soft heart.\nWild spirit.','#dcb29b','#4c3830','#8c553d','❧','desert'],
+ ['garden','Secret Garden','Botanical','There’s a little\nmagic in knowing you.','#bccbb6','#30422c','#618052','❦','garden'],
+ ['symphony','A Little Symphony','Intimate','Some people\nfeel like a favourite song.','#e4d3ba','#514135','#927044','♫','music'],
+ ['confession','Between the Lines','Intimate','A few words.\nAll the feeling.','#e2c2be','#603a36','#9b544d','♡','typewriter'],
+ ['passport','Somewhere Wonderful','Nostalgic','To more places.\nMore stories.\nMore you.','#cad9d6','#2b4c48','#568c83','✈','passport'],
+ ['tide','Tide & Time','Cinematic','Let the good\nthings find you.','#a8d1cf','#254c56','#448e8f','≈','waves'],
+ ['halo','Your Orbit','Celestial','The world feels\nbrighter around you.','#343145','#f3e8cf','#c7b386','◉','halo'],
+ ['fanfare','A Proper Celebration','Playful','This calls for\na little fanfare.','#e1b3a5','#50382d','#a8543c','✵','fan'],
+ ['keepsake','Sealed With Feeling','Nostalgic','Something small.\nSomething worth keeping.','#d7dbb5','#3e4933','#7b8653','✉','wax']
+].map(([id,name,category,title,color,ink,accent,motif,layout])=>({id,name,tag:category+' · a different little world',title,color,ink,accent,motif,layout}));
