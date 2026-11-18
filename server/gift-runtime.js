@@ -15,7 +15,7 @@ export async function services() {
   return {db: getFirestore(app), auth: getAuth(app)};
 }
 
-export function route(handler, method = 'POST') {
+export function route(handler, method = 'POST', maxBytes = 20_000) {
   return async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
@@ -28,14 +28,14 @@ export function route(handler, method = 'POST') {
         if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] || '')) {
           throw new GiftError(415, 'Send JSON to this endpoint.');
         }
-        if (Number(req.headers['content-length']) > 20000) throw new GiftError(413, 'Request too large.');
+        if (Number(req.headers['content-length']) > maxBytes) throw new GiftError(413, 'Request too large.');
         try {
           if (typeof body === 'string') body = JSON.parse(body);
         } catch {
           throw new GiftError(400, 'Invalid JSON.');
         }
         if (!body || typeof body !== 'object' || Array.isArray(body)) throw new GiftError(400, 'Invalid request.');
-        if (Buffer.byteLength(JSON.stringify(body)) > 20000) throw new GiftError(413, 'Request too large.');
+        if (Buffer.byteLength(JSON.stringify(body)) > maxBytes) throw new GiftError(413, 'Request too large.');
       }
       res.status(200).json(await handler(req, body));
     } catch (error) {

@@ -1,4 +1,6 @@
 import {getSignature,openGiftAssistant,openGiftCheckout} from './gift-ui.js';
+import {designControls,emphasisControls,captureDesign,appearance,connectScrollMotion} from './design-ui.js';
+import {preparePhoto,createShortLink,loadShortCard} from './sharing.js';
 import {publicRadar,requestCountryLocation} from './radar.js';
 import {studioMarkup,detailStep,briefMarkup} from './studio-v2.js';
 import {recipientProfile,applyProfile,upsertProfile} from './memory.js';
@@ -17,6 +19,7 @@ const cards=()=>read(key()+':cards',[]);
 const personal=()=>read(key()+':dates',[]);
 const blank=()=>({id:crypto.randomUUID(),to:'',from:user?.displayName?.split(' ')[0]||'',occasion:'Birthday',details:'',scenery:'',flowers:'',tone:'Warm',color:'',variant:0,mediaUrl:'',mediaType:'image',title:'',message:'',motion:true});
 let draft=read(key()+':working',read('ultra:working',null)),allLooks=false,catalogueLimit=24;
+let stopScrollMotion=()=>{};
 const profiles=()=>read(key()+':people',[]);
 const label=(s,content)=>`<span class="eyebrow">${s}</span>${content}`;
 const iconArrow='<span aria-hidden="true">↗</span>';
@@ -40,11 +43,11 @@ function stepMarkup(){
   const detail=detailStep(card,builderStep,occasions,profiles());if(detail)return detail;
   if(builderStep===0)return `<div class="eyebrow">FIRST, THE PERSON</div><h2>Who’s on<br><em>your mind?</em></h2><p>A little context goes a long way.</p><label>Their name<input name="to" maxlength="80" placeholder="e.g. Sample recipient" value="${esc(card.to)}" required autocomplete="off"></label><label>The occasion<select name="occasion">${[...new Set([...occasions,card.occasion])].map(o=>`<option ${o===card.occasion?'selected':''}>${esc(o)}</option>`).join('')}</select></label><label>From<input name="from" maxlength="80" value="${esc(card.from)}" placeholder="Your name" required></label><label>The feeling<select name="tone">${['Warm','Playful','Understated'].map(t=>`<option ${card.tone===t?'selected':''}>${t}</option>`).join('')}</select></label>`;
   if(builderStep===1)return `<div class="eyebrow">THE PART ONLY YOU KNOW</div><h2>What makes<br><em>them, them?</em></h2><p>A memory, an in-joke, something you admire. Share only what you’d be comfortable keeping in your private draft.</p><label>A little personal detail<textarea name="details" maxlength="1200" rows="4" placeholder="A shared adventure, a kind gesture, or something you admire…">${esc(card.details)}</textarea></label><label>Favourite flowers, colours, things<input name="flowers" maxlength="150" placeholder="Sunflowers, sage green, a good book…" value="${esc(card.flowers)}"></label><label>A place or a feeling<input name="scenery" maxlength="150" placeholder="Misty mountain ranges, a golden coast…" value="${esc(card.scenery)}"></label><p class="small-note">The wording helper uses local templates and your details. Everything stays editable. Avoid sensitive personal information.</p>`;
-  if(builderStep===2){const s=variant(card.variant);return `<div class="eyebrow">A FEELING YOU CAN SEE</div><h2>Give it<br><em>their energy.</em></h2><label>Composition<select name="scene">${scenes.map((s,i)=>`<option value="${i}" ${Math.floor(card.variant/20)===i?'selected':''}>${s.name} — ${s.tag.split(' · ')[0]}</option>`).join('')}</select></label><div class="field-pair"><label>Palette<select name="palette">${palettes.map((p,i)=>`<option value="${i}" ${s.palette===i?'selected':''}>${p}</option>`).join('')}</select></label><label>Typography<select name="font">${fonts.map((f,i)=>`<option value="${i}" ${s.type===i?'selected':''}>${f.name}</option>`).join('')}</select></label></div><div class="field-pair"><label>Accent colour<input type="color" name="color" value="${card.color||s.accent}"></label><label class="check"><input type="checkbox" name="motion" ${card.motion?'checked':''}> Gentle motion</label></div><button type="button" class="outline full" id="shuffle">Surprise me. No recent repeats. ↻</button><div class="divider"></div><label>Media link (optional)<input name="mediaUrl" type="url" placeholder="https://…/your-image.jpg" value="${esc(card.mediaUrl)}"></label><div class="field-pair"><label>Media type<select name="mediaType"><option value="image" ${card.mediaType!=='video'?'selected':''}>Image</option><option value="video" ${card.mediaType==='video'?'selected':''}>Video</option></select></label><button class="outline" type="button" id="media-search">Find free media ↗</button></div><button class="text-button" type="button" id="upload">Or use a photo from your device ↑</button><input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" hidden><p class="small-note">Device photos stay in your browser and downloadable card. Link sharing needs an HTTPS image URL.</p>`;}
-  return `<div class="eyebrow">THE LAST LITTLE TOUCH</div><h2>Say it<br><em>like you.</em></h2><label>The headline<textarea name="title" maxlength="240" rows="3" required>${esc(card.title)}</textarea></label><label>Your note<textarea name="message" maxlength="6000" rows="8" required>${esc(card.message)}</textarea></label><button class="text-button" type="button" id="reword">Try another wording ↻</button><p class="small-note">Your draft details are private. Only the name, final words, design and chosen media go into the card link. Links can be forwarded and cannot be revoked; use them for non-sensitive notes.</p>`;
+  if(builderStep===2){const s=variant(card.variant);return `<div class="eyebrow">A FEELING YOU CAN SEE</div><h2>Give it<br><em>their energy.</em></h2><label>Composition<select name="scene">${scenes.map((s,i)=>`<option value="${i}" ${Math.floor(card.variant/20)===i?'selected':''}>${s.name} — ${s.tag.split(' · ')[0]}</option>`).join('')}</select></label><div class="field-pair"><label>Palette<select name="palette">${palettes.map((p,i)=>`<option value="${i}" ${s.palette===i?'selected':''}>${p}</option>`).join('')}</select></label><label>Typography<select name="font">${fonts.map((f,i)=>`<option value="${i}" ${s.type===i?'selected':''}>${f.name}</option>`).join('')}</select></label></div><div class="field-pair"><label>Accent colour<input type="color" name="color" data-default="${s.accent}" value="${esc(card.color||s.accent)}"></label><label class="check"><input type="checkbox" name="motion" ${card.motion?'checked':''}> Motion</label></div>${designControls(card)}<button type="button" class="outline full" id="shuffle">Surprise me. No recent repeats. ↻</button><div class="divider"></div><label class="check"><input type="checkbox" name="mediaHidden" ${card.mediaHidden?'checked':''}> Hide all photos and video</label><label>Media link (optional)<input name="mediaUrl" type="url" maxlength="2000" placeholder="https://…/your-image.jpg" value="${esc(card.mediaUrl)}"></label><div class="field-pair"><label>Media type<select name="mediaType"><option value="image" ${card.mediaType!=='video'?'selected':''}>Image</option><option value="video" ${card.mediaType==='video'?'selected':''}>Video</option></select></label><button class="outline" type="button" id="media-search">Find free media ↗</button></div><button class="text-button" type="button" id="upload">Or use a photo from your device ↑</button><input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" hidden><p class="small-note" id="media-selection">${card.localPhoto?'Device photo selected':card.mediaUrl?esc(card.credit||'Media link selected'):'Template media'}</p><button class="text-button" type="button" id="reset-media">Reset to template media</button><p class="small-note">Creating a short link includes the selected photo in the shared card.</p>`;}
+  return `<div class="eyebrow">THE LAST LITTLE TOUCH</div><h2>Say it<br><em>like you.</em></h2><label>The headline<textarea name="title" maxlength="240" rows="3" required>${esc(card.title)}</textarea></label><label>Your note<textarea name="message" maxlength="6000" rows="8" required>${esc(card.message)}</textarea></label>${emphasisControls(card)}<button class="text-button" type="button" id="reword">Try another wording ↻</button><p class="small-note">Your draft details are private. Only the name, final words, design and chosen media go into the card link. Links can be forwarded and cannot be revoked; use them for non-sensitive notes.</p>`;
 }
 function showBuilder(){
-  $('#modal').close();view='builder';$('.footer').hidden=false;$('#main').innerHTML=`<div class="builder-header"><button class="text-button" id="leave-builder">← Back to the studio</button><div class="step-track">${['The person','The details','The feeling','The words'].map((t,i)=>`<span class="${i===builderStep?'current':i<builderStep?'done':''}">${i<builderStep?'✓':String(i+1).padStart(2,'0')} <span>${t}</span></span>`).join('')}</div><span class="eyebrow">A LITTLE WORK IN PROGRESS</span></div><section class="builder"><form id="builder-form" class="builder-form">${stepMarkup()}${builderStep>0?'<section class="gift-invitation"><div><span class="eyebrow">THE GIFT STUDIO</span><strong>A little help getting it right.</strong><p>Find words and card worlds that fit this person.</p></div><button class="outline" type="button" id="gift-ai">Try AI assist</button></section>':''}<div class="builder-buttons">${builderStep?'<button type="button" class="text-button" id="prev-step">← Back</button>':'<span></span>'}<button class="primary" type="submit">${builderStep===3?'Preview their card':'Keep going'} ${iconArrow}</button></div><button type="button" class="text-button" id="save-draft">Save draft for later ↓</button></form><div class="preview-pane"><div class="preview-caption"><span class="status-dot"></span> LIVE LITTLE PREVIEW <span>${String(card.variant+1).padStart(3,'0')} / ${TOTAL_VARIANTS}</span></div><div id="live-card"></div><p class="preview-hint">Their card. Your finishing touches.</p><div id="brief">${briefMarkup(card)}</div></div></section>`;
+  stopScrollMotion();$('#modal').close();view='builder';$('.footer').hidden=false;$('#main').innerHTML=`<div class="builder-header"><button class="text-button" id="leave-builder">← Back to the studio</button><div class="step-track">${['The person','The details','The feeling','The words'].map((t,i)=>`<span class="${i===builderStep?'current':i<builderStep?'done':''}">${i<builderStep?'✓':String(i+1).padStart(2,'0')} <span>${t}</span></span>`).join('')}</div><span class="eyebrow">A LITTLE WORK IN PROGRESS</span></div><section class="builder"><form id="builder-form" class="builder-form">${stepMarkup()}${builderStep>0?'<section class="gift-invitation"><div><span class="eyebrow">THE GIFT STUDIO</span><strong>A little help getting it right.</strong><p>Find words and card worlds that fit this person.</p></div><button class="outline" type="button" id="gift-ai">Try AI assist</button></section>':''}<div class="builder-buttons">${builderStep?'<button type="button" class="text-button" id="prev-step">← Back</button>':'<span></span>'}<button class="primary" type="submit">${builderStep===3?'Preview their card':'Keep going'} ${iconArrow}</button></div><button type="button" class="text-button" id="save-draft">Save draft for later ↓</button></form><div class="preview-pane"><div class="preview-caption"><span class="status-dot"></span> LIVE LITTLE PREVIEW <span>${String(card.variant+1).padStart(3,'0')} / ${TOTAL_VARIANTS}</span></div><div id="live-card"></div><p class="preview-hint">Their card. Your finishing touches.</p><div id="brief">${briefMarkup(card)}</div></div></section>`;
   paintLive();
   $('#gift-ai')?.addEventListener('click',()=>{
     capture();
@@ -70,43 +73,170 @@ function showBuilder(){
   });$('#load-person')?.addEventListener('change',e=>{if(e.target.value==='')return;card=applyProfile(card,profiles()[+e.target.value]);card.rememberPerson=true;showBuilder();});$('#builder-form').oninput=()=>{capture();paintLive();};$('#builder-form').onchange=()=>{capture();paintLive();};$('#builder-form').onsubmit=e=>{e.preventDefault();capture();if(builderStep===0&&!card.to.trim()){toast('Who is this little card for?');return;}if(builderStep===0&&card.customOccasion?.trim())card.occasion=card.customOccasion.trim();if(builderStep===1){if(!card.designChosen)card.variant=suggestVariant(card);const words=compose(card,versions);card.title||=words.title;card.message||=words.message;}if(builderStep===3){showPreview();return;}builderStep++;showBuilder();scrollTo(0,0);};
   $('#prev-step')?.addEventListener('click',()=>{capture();builderStep--;showBuilder();});$('#leave-builder').onclick=()=>{capture();navigate('studio');};$('#save-draft').onclick=saveCard;
   $('#shuffle')?.addEventListener('click',()=>{capture();history=[...history,card.variant].slice(1-TOTAL_VARIANTS);card.variant=freshVariant(history);card.designChosen=true;card.color='';write('ultra:history',history);showBuilder();});$('#reword')?.addEventListener('click',()=>{capture();Object.assign(card,compose(card,++versions));showBuilder();});$('#media-search')?.addEventListener('click',mediaDialog);
-  $('#upload')?.addEventListener('click',()=>$('#photo-input').click());$('#photo-input')?.addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;if(file.size>10_000_000){toast('Choose an image smaller than 10 MB.');return;}try{const bitmap=await createImageBitmap(file);const canvas=document.createElement('canvas'),scale=Math.min(1,1200/Math.max(bitmap.width,bitmap.height));canvas.width=bitmap.width*scale;canvas.height=bitmap.height*scale;canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();card.localPhoto=canvas.toDataURL('image/jpeg',.8);card.mediaUrl='';card.mediaType='image';draft=card;write(key()+':working',draft);showBuilder();toast('Photo added. Export includes it; sharing a link requires a hosted photo.');}catch{toast('That image could not be opened. Try a JPEG or PNG.');}});
+  $('#test-envelope')?.addEventListener('click',()=>{capture();showPreview(false,false,2);});
+  $('#reset-media')?.addEventListener('click',()=>{
+    Object.assign(card,{mediaUrl:'',mediaType:'image',mediaHidden:false,credit:'',creditUrl:'',localPhoto:''});
+    showBuilder();
+    capture();
+  });
+  $('#upload')?.addEventListener('click',()=>$('#photo-input').click());
+  $('#photo-input')?.addEventListener('change',async e=>{
+    const file=e.target.files[0], editing=card, form=$('#builder-form');
+    if(!file)return;
+    try{
+      const photo=await preparePhoto(file);
+      if(card!==editing||$('#builder-form')!==form)return;
+      Object.assign(card,{localPhoto:photo,mediaUrl:'',mediaType:'image',mediaHidden:false,credit:'',creditUrl:''});
+      showBuilder();
+      capture();
+      toast('Photo added to the card.');
+    }catch(error){if($('#builder-form')===form)toast(error.message);}
+    e.target.value='';
+  });
 }
-function capture(){const f=$('#builder-form');if(!f)return;for(const name of ['to','from','occasion','tone','details','flowers','scenery','color','mediaUrl','mediaType','title','message','nickname','relationship','pronouns','customOccasion','favouriteColor','sharedMemory','admiration','interests','avoid','futureWish']){const e=f.elements.namedItem(name);if(e)card[name]=e.value;}if(f.elements.rememberPerson)card.rememberPerson=f.elements.rememberPerson.checked;if(f.elements.motion)card.motion=f.elements.motion.checked;if(f.elements.scene)card.variant=Number(f.elements.scene.value)*20+Number(f.elements.palette.value)*4+Number(f.elements.font.value);draft=card;write(key()+':working',draft);}
-function cardHTML(c,{mini=false,opened=false}={}){
-  const s=variant(c.variant),url=c.localPhoto||safeMedia(c.mediaUrl)||s.photo;const type=c.localPhoto?'image':c.mediaUrl?c.mediaType:'image';const style=`--paper:${s.color};--ink:${s.ink};--accent:${c.color||s.accent};--display:${s.font}`;
-  return `<article class="greeting layout-${s.layout} ${opened?'opened':''} ${c.motion===false?'still':''} ${mini?'is-mini':''}" style="${style}" aria-label="A ${esc(c.occasion)} card for ${esc(c.to||'someone special')}"><div class="greeting-grain"></div><div class="greeting-decoration" aria-hidden="true"><span class="motif-main">${s.motif}</span>${Array.from({length:9},(_,i)=>`<i style="--i:${i}">${s.motif}</i>`).join('')}</div><div class="greeting-label">${esc(s.name.toUpperCase())} <span>MADE JUST FOR YOU</span></div>${url?`<div class="greeting-picture">${type==='video'?`<video src="${esc(url)}" muted loop playsinline preload="metadata" ${mini?'':'controls'} aria-label="Personal card video"></video>`:`<img src="${esc(url)}" alt="${esc(c.scenery||'A scene chosen for this card')}" ${mini?'loading="lazy"':''} referrerpolicy="no-referrer">`}</div>`:''}<div class="greeting-copy"><div class="eyebrow">${esc(c.occasion||'Just because')} / FOR ${esc(c.to||'SOMEONE SPECIAL')}</div><h2>${esc(c.title||s.title).replaceAll('\n','<br>')}</h2>${!mini?`<div class="greeting-note">${esc(c.message||'A little note from the heart.').split('\n\n').map(p=>`<p>${p.replaceAll('\n','<br>')}</p>`).join('')}<div class="signature">With a little extra thought,<br><span>${esc(c.from||'Someone who cares')}</span></div></div>`:''}</div><div class="greeting-base"><span>A FEELING, WRAPPED UP.</span><span>${s.motif}</span></div></article>`;
+function capture(){
+  const f=$('#builder-form');
+  if(!f)return;
+  const previousMedia=card.mediaUrl;
+  for(const name of ['to','from','occasion','tone','details','flowers','scenery','color','mediaUrl','mediaType','title','message','nickname','relationship','pronouns','customOccasion','favouriteColor','sharedMemory','admiration','interests','avoid','futureWish']){
+    const e=f.elements.namedItem(name);
+    if(e)card[name]=e.value;
+  }
+  if(previousMedia!==card.mediaUrl)Object.assign(card,{localPhoto:'',credit:'',creditUrl:''});
+  if(f.elements.mediaHidden)card.mediaHidden=f.elements.mediaHidden.checked;
+  if(f.elements.rememberPerson)card.rememberPerson=f.elements.rememberPerson.checked;
+  if(f.elements.motion)card.motion=f.elements.motion.checked;
+  if(f.elements.scene){
+    const next=Number(f.elements.scene.value)*20+Number(f.elements.palette.value)*4+Number(f.elements.font.value);
+    if(next!==card.variant){
+      card.variant=next;
+      card.designChosen=true;
+      if(card.color===f.elements.color.dataset.default)card.color='';
+      f.elements.color.dataset.default=variant(next).accent;
+      f.elements.color.value=card.color||variant(next).accent;
+    }
+  }
+  captureDesign(card,f.elements);
+  draft=card;
+  write(key()+':working',draft);
 }
-function paintLive(){if($('#brief'))$('#brief').innerHTML=briefMarkup(card);$('#live-card').innerHTML=cardHTML(card,{mini:true,opened:true});const c=$('.preview-caption span:last-child');if(c)c.textContent=String(card.variant+1).padStart(3,'0')+' / '+TOTAL_VARIANTS;}
+function cardMedia(c,s=variant(c.variant)){
+  if(c.mediaHidden)return {};
+  if(safeMedia(c.localPhoto,true))return {url:c.localPhoto,type:'image',credit:'Personal photo'};
+  const url=safeMedia(c.mediaUrl);
+  if(url)return {url,type:c.mediaType,credit:c.credit||'Selected media',source:safeMedia(c.creditUrl)};
+  return {url:s.photo,type:'image',credit:s.credit,source:safeMedia(s.url)};
+}
+function cardHTML(c,{mini=false,opened=false,live=false}={}){
+  const s=variant(c.variant),media=cardMedia(c,s),look=appearance(c,s),seen=new Set();
+  const headline=c.title||s.title;
+  let title=look.highlight(headline,seen);
+  if(!seen.size&&headline.includes('\n')){
+    const lines=headline.split('\n'), finale=lines.pop();
+    title=lines.map(esc).join('<br>')+'<br><span class="headline-finale">'+esc(finale)+'</span>';
+  }
+  const move=look.move;
+  const particles=move&&['confetti','circus'].includes(move.key)
+    ? '<div class="design-particles" aria-hidden="true">'+Array.from({length:16},(_,i)=>'<i style="--particle:'+i+'"></i>').join('')+'</div>' : '';
+  const picture=!media.url?'':media.type==='video'
+    ? '<video src="'+esc(media.url)+'" muted loop playsinline preload="'+(mini?'none':'metadata')+'" '+(mini?'':'controls')+' aria-label="Personal card video"></video>'
+    : '<img src="'+esc(media.url)+'" alt="A scene chosen for this card" '+(mini?'loading="lazy"':'')+' referrerpolicy="no-referrer">';
+  const note=(c.message||'A little note from the heart.').split('\n\n').map(p=>'<p>'+look.highlight(p,seen)+'</p>').join('');
+  return `<article class="greeting refined-card layout-${s.layout} ${opened?'opened':''} ${c.motion===false?'still':''} ${mini?'is-mini':''} ${look.customType?'custom-type':''} effect-${look.effect}" ${move&&!live&&!mini?`data-trigger="${move.trigger}" data-motion="${move.key}"`:''} style="${esc(look.style)}" aria-label="A ${esc(c.occasion)} card for ${esc(c.to||'someone special')}"><div class="design-atmosphere" aria-hidden="true"></div><div class="greeting-grain"></div><div class="greeting-decoration" aria-hidden="true"><span class="motif-main">${s.motif}</span>${Array.from({length:9},(_,i)=>`<i style="--i:${i}">${s.motif}</i>`).join('')}</div>${particles}<div class="greeting-label">${esc(s.name.toUpperCase())} <span>MADE JUST FOR YOU</span></div>${picture?`<div class="greeting-picture">${picture}</div>`:''}<div class="greeting-copy"><div class="eyebrow">${esc(c.occasion||'Just because')} / FOR ${esc(c.to||'SOMEONE SPECIAL')}</div><h2>${title}</h2>${mini?'':`<div class="greeting-note">${note}<div class="signature">With a little extra thought,<br><span>${esc(c.from||'Someone who cares')}</span></div></div>`}</div><div class="greeting-base"><span>A FEELING, WRAPPED UP.</span><span>${s.motif}</span></div></article>`;
+}
+function paintLive(){
+  if($('#brief'))$('#brief').innerHTML=briefMarkup(card);
+  $('#live-card').innerHTML=cardHTML(card,builderStep===3?{live:true}:{mini:true});
+  const caption=$('.preview-caption span:last-child');
+  if(caption)caption.textContent=String(card.variant+1).padStart(3,'0')+' / '+TOTAL_VARIANTS;
+  const status=$('#phrase-missing');
+  if(status){
+    const look=appearance(card,variant(card.variant)), seen=new Set();
+    look.highlight(card.title||'',seen);
+    for(const paragraph of (card.message||'').split('\n\n'))look.highlight(paragraph,seen);
+    const missing=(card.design?.highlights||[]).map(phrase=>phrase.trim()).filter(phrase=>phrase&&!seen.has(phrase.toLowerCase()));
+    const message=missing.length?'Missing from your card: '+missing.join(', '):'';
+    if(status.textContent!==message)status.textContent=message;
+  }
+}
 function giftSignIn(){
   if(user)return true;
   toast('Sign in to use the Gift Studio. Your open card stays here.');
   accountDialog();
   return false;
 }
-function showPreview(isRecipient=false,signature=false){
-  recipient=isRecipient;view='preview';$('#modal').close();if(!card.title)Object.assign(card,compose(card));$('#main').innerHTML=`<section class="recipient-intro"><div class="eyebrow">${isRecipient?'SOMEONE WAS THINKING OF YOU':'THE MOMENT IT BECOMES THEIRS'}</div><h1>${isRecipient?`${esc(card.to)}, this one’s <em>for you.</em>`:'A little preview.<br><em>A lot of feeling.</em>'}</h1><p>${isRecipient?`A ${esc(card.occasion.toLowerCase())} card from ${esc(card.from)}.`:'Take a breath. Open it. See how it feels.'}</p></section><div class="recipient-stage ${signature?'signature-stage':''}" id="recipient-stage"><button class="envelope" id="open-card" aria-label="Open your card"><span class="envelope-flap"></span>${signature?'<span class="signature-foil" aria-hidden="true">SIGNATURE REVEAL</span>':''}<span class="envelope-seal"><img src="/brand-ribbon.svg" alt=""></span><span class="envelope-caption">FOR ${esc(card.to.toUpperCase())}<small>OPEN WITH FEELING ↗</small></span></button><div id="opened-card" hidden>${signature?'<div class="signature-stars" aria-hidden="true">'+Array.from({length:12},(_,i)=>'<i style="--star:'+i+'">✦</i>').join('')+'</div>':''}${cardHTML(card)}</div></div>${isRecipient?'':'<section class="gift-invitation gift-upgrade"><div><span class="eyebrow">OPTIONAL PREMIUM / PAYPAL SANDBOX</span><strong>Give their opening moment a little more.</strong><p>Signature Reveal adds a foil envelope and illustrated stars. The classic card is free.</p></div><button class="outline" id="gift-upgrade">Explore Signature Reveal</button></section>'}<div class="recipient-actions">${isRecipient?'<button class="primary" id="make-own">Make someone else’s day ↗</button>':'<button class="outline" id="edit">← Keep refining</button><button class="outline" id="save-preview">Save to collection ↓</button><button class="primary" id="share">Send a little feeling ↗</button>'}<button class="text-button" id="download">Download keepsake ↓</button><button class="text-button" id="motion-toggle">${card.motion===false?'Enable':'Pause'} motion</button></div><div class="credit">${esc(card.credit||variant(card.variant).credit||'Original graphics by Ultra Cards')}${safeMedia(card.creditUrl||variant(card.variant).url)?` · <a href="${esc(safeMedia(card.creditUrl||variant(card.variant).url))}" target="_blank" rel="noopener noreferrer">Media source ↗</a>`:''}</div>`;
+function showPreview(isRecipient=false,signature=false,returnStep=3){
+  stopScrollMotion();
+  const look=appearance(card,variant(card.variant));
+  const media=cardMedia(card);
+  const seal=look.seal?'<span aria-hidden="true">'+look.seal+'</span>':'<img src="/brand-ribbon.svg" alt="">';
+  recipient=isRecipient;view='preview';$('#modal').close();if(!card.title)Object.assign(card,compose(card));$('#main').innerHTML=`<section class="recipient-intro"><div class="eyebrow">${isRecipient?'SOMEONE WAS THINKING OF YOU':'THE MOMENT IT BECOMES THEIRS'}</div><h1>${isRecipient?`${esc(card.to)}, this one’s <em>for you.</em>`:'A little preview.<br><em>A lot of feeling.</em>'}</h1><p>${isRecipient?`A ${esc(card.occasion.toLowerCase())} card from ${esc(card.from)}.`:'Take a breath. Open it. See how it feels.'}</p></section><div class="recipient-stage ${signature?'signature-stage':''}" id="recipient-stage"><button class="envelope ${card.motion===false?'still':''}" id="open-card" style="${esc(look.envelopeStyle)}" data-envelope-motion="${look.move?.trigger||''}" aria-label="Open your card"><span class="envelope-flap"></span>${signature?'<span class="signature-foil" aria-hidden="true">SIGNATURE REVEAL</span>':''}<span class="envelope-seal">${seal}</span><span class="envelope-caption">FOR ${esc(card.to.toUpperCase())}<small>OPEN WITH FEELING ↗</small></span></button><div id="opened-card" hidden>${signature?'<div class="signature-stars" aria-hidden="true">'+Array.from({length:12},(_,i)=>'<i style="--star:'+i+'">✦</i>').join('')+'</div>':''}${cardHTML(card)}</div></div>${isRecipient?'':'<section class="gift-invitation gift-upgrade"><div><span class="eyebrow">OPTIONAL PREMIUM / PAYPAL SANDBOX</span><strong>Give their opening moment a little more.</strong><p>Signature Reveal adds a foil envelope and illustrated stars. The classic card is free.</p></div><button class="outline" id="gift-upgrade">Explore Signature Reveal</button></section>'}<div class="recipient-actions">${isRecipient?'<button class="primary" id="make-own">Make someone else’s day ↗</button>':'<button class="outline" id="edit">← Keep refining</button><button class="outline" id="save-preview">Save to collection ↓</button><button class="primary" id="share">Send a little feeling ↗</button>'}<button class="recipient-control" id="download"><span aria-hidden="true">↓</span> Download keepsake</button><button class="recipient-control recipient-control-dark" id="motion-toggle" aria-pressed="${card.motion===false}">${card.motion===false?'Enable':'Pause'} motion</button></div><div class="credit">${esc(media.credit||'Original graphics by Ultra Cards')}${media.source?` · <a href="${esc(media.source)}" target="_blank" rel="noopener noreferrer">Media source ↗</a>`:''}</div>`;
   $('#gift-upgrade')?.addEventListener('click',()=>openGiftCheckout(card,{
     dialog,signIn:giftSignIn,preview:()=>showPreview(false,true),share:openShareLink,
   }));
   if(isRecipient){document.title=`A little ${card.occasion} card for ${card.to}`;$('.topbar').hidden=true;$('.footer').hidden=true;}
-  $('#open-card').onclick=()=>{const env=$('#open-card');env.classList.add('unsealed');setTimeout(()=>{env.hidden=true;$('#opened-card').hidden=false;requestAnimationFrame(()=>$('.greeting').classList.add('opened'));$('#opened-card').scrollIntoView({behavior:card.motion===false?'instant':'smooth',block:'start'});},card.motion===false||matchMedia('(prefers-reduced-motion: reduce)').matches?0:650);};
-  $('#edit')?.addEventListener('click',()=>{builderStep=3;showBuilder();});$('#save-preview')?.addEventListener('click',saveCard);$('#share')?.addEventListener('click',shareDialog);$('#make-own')?.addEventListener('click',()=>{location.href='/';});$('#download').onclick=exportCard;$('#motion-toggle').onclick=()=>{card.motion=card.motion===false;$('.greeting').classList.toggle('still',!card.motion);$('#motion-toggle').textContent=(card.motion?'Pause':'Enable')+' motion';};
+  const envelope=$('#open-card'), opened=$('#opened-card');
+  const greeting=opened.querySelector('.greeting');
+  const motionAllowed=()=>card.motion!==false&&!matchMedia('(prefers-reduced-motion: reduce)').matches;
+  envelope.onclick=()=>{
+    if(envelope.classList.contains('unsealed'))return;
+    envelope.classList.add('unsealed');
+    const duration=look.move?.trigger==='both'?parseFloat(look.move.duration)*1000:650;
+    setTimeout(()=>{
+      if(!envelope.isConnected)return;
+      envelope.hidden=true;
+      opened.hidden=false;
+      greeting.classList.add('opened');
+      greeting.tabIndex=-1;
+      greeting.focus({preventScroll:true});
+      stopScrollMotion=connectScrollMotion(opened);
+      opened.scrollIntoView({behavior:motionAllowed()?'smooth':'instant',block:'start'});
+    },motionAllowed()?duration:0);
+  };
+  $('#edit')?.addEventListener('click',()=>{builderStep=returnStep;showBuilder();});
+  $('#save-preview')?.addEventListener('click',saveCard);
+  $('#share')?.addEventListener('click',shareDialog);
+  $('#make-own')?.addEventListener('click',()=>{location.href='/';});
+  $('#download').onclick=exportCard;
+  $('#motion-toggle').onclick=e=>{
+    card.motion=card.motion===false;
+    greeting.classList.toggle('still',!card.motion);
+    envelope.classList.toggle('still',!card.motion);
+    e.currentTarget.textContent=(card.motion?'Pause':'Enable')+' motion';
+    e.currentTarget.setAttribute('aria-pressed',String(!card.motion));
+    if(!card.motion){
+      greeting.style.setProperty('--rx','0deg');
+      greeting.style.setProperty('--ry','0deg');
+      greeting.querySelector('video')?.pause();
+    }
+  };
   const g=$('.greeting');g.addEventListener('pointermove',e=>{if(card.motion===false||matchMedia('(prefers-reduced-motion: reduce)').matches||e.pointerType!=='mouse')return;const r=g.getBoundingClientRect();g.style.setProperty('--rx',((e.clientY-r.top)/r.height-.5)*-3+'deg');g.style.setProperty('--ry',((e.clientX-r.left)/r.width-.5)*4+'deg');});g.addEventListener('pointerleave',()=>{g.style.setProperty('--rx','0deg');g.style.setProperty('--ry','0deg');});scrollTo(0,0);
 }
 async function saveCard(){capture();if(!card.to.trim()){toast('Add their name before saving.');return;}card.updatedAt=new Date().toISOString();const all=cards().filter(c=>c.id!==card.id);all.unshift({...card});if(!write(key()+':cards',all.slice(0,200)))return;if(card.rememberPerson)rememberPerson();updateAccount();toast('Saved on this device.');if(user&&cloud){try{if(card.localPhoto)throw Error('Device photo stays on this device. Export to keep it with the card.');await cloudSave(card);toast('Saved on this device and synced to your account.');}catch(e){toast('Saved on this device. Cloud: '+e.message);}}}
-function shareDialog(){
-  if(card.localPhoto){toast('This card uses a device photo. Download the keepsake, or replace the photo with an HTTPS link before sharing.');return;}
-  const encoded=encodeCard(card);
-  if(encoded.length>16000){toast('This card is too large for a share link. Try shortening the note or media link, or download it.');return;}
-  openShareLink(location.origin+'/#card='+encoded);
+async function shareDialog(){
+  const sharing=card, button=$('#share');
+  button.disabled=true;
+  button.textContent='Creating short link…';
+  try{
+    const url=await createShortLink(sharing);
+    if(button.isConnected)openShareLink(url);
+  }catch(error){
+    if(!button.isConnected)return;
+    const encoded=sharing.localPhoto&&!sharing.mediaHidden?'':encodeCard(sharing);
+    dialog(`<h2>Short link unavailable</h2><p>${esc(error.message)}</p><div class="share-links"><button type="button" class="outline" id="share-download">Download keepsake</button>${encoded&&encoded.length<=16000?'<button type="button" class="outline" id="share-long">Use a long link</button>':''}</div>`);
+    $('#share-download').onclick=exportCard;
+    $('#share-long')?.addEventListener('click',()=>openShareLink(location.origin+'/#card='+encoded));
+  }finally{
+    button.disabled=false;
+    button.textContent='Send a little feeling ↗';
+  }
 }
 function openShareLink(url){
   dialog(`<div class="eyebrow">A FEELING, ON ITS WAY</div><h2>Make their <em>day.</em></h2><p>Anyone with this link can open and forward the card. It contains your final note and cannot be revoked. Your private draft details are left out.</p><label>Their card link<input id="share-link" readonly value="${esc(url)}"></label><button class="primary full" id="copy-link">Copy card link ↗</button><div class="share-links"><a class="outline" href="https://wa.me/?text=${encodeURIComponent('A little something, just for you. '+url)}" target="_blank" rel="noopener noreferrer">WhatsApp ↗</a><button class="outline" id="native-share">More ways to share ↗</button></div>`);$('#copy-link').onclick=async()=>{try{await navigator.clipboard.writeText(url);toast('Card link copied.');}catch{$('#share-link').select();toast('Select and copy the link above.');}};$('#native-share').onclick=async()=>{if(navigator.share){try{await navigator.share({title:'A little something for '+card.to,url});}catch{}}else{$('#share-link').select();toast('Copy the link into your favourite messenger.');}};
 }
 async function exportCard(){
-  const c={...publicCard(card),localPhoto:card.localPhoto||''};const css=await fetch('/src/style.css').then(r=>{if(!r.ok)throw Error();return r.text();}).catch(()=>null);if(!css){toast('Could not create the keepsake. Please try again.');return;}
-  const html=`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A card for ${esc(c.to)}</title><style>${css}</style><body class="exported"><main>${cardHTML(c,{opened:true})}</main><p style="text-align:center">Made with Ultra Cards · ${esc(c.credit||variant(c.variant).credit||'Original graphics')}<br>Internet is needed for remote images and video.</p></body></html>`;
+  const c={...publicCard(card),localPhoto:card.localPhoto||''};const media=cardMedia(c);const fontLinks=$$('link[rel=stylesheet]').filter(link=>link.href.startsWith('https://fonts.googleapis.com/')).map(link=>link.outerHTML).join('');const css=await fetch('/src/style.css').then(r=>{if(!r.ok)throw Error();return r.text();}).catch(()=>null);if(!css){toast('Could not create the keepsake. Please try again.');return;}
+  const html=`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A card for ${esc(c.to)}</title>${fontLinks}<style>${css}</style><body class="exported"><main>${cardHTML(c,{opened:true})}</main><p style="text-align:center">Made with Ultra Cards · ${esc(media.credit||'Original graphics')}${media.source?` · <a href="${esc(media.source)}" rel="noreferrer">Media source</a>`:''}<br>Internet is needed for remote images and video.</p><script>(${connectScrollMotion.toString()})(document)</script></body></html>`;
   download(new Blob([html],{type:'text/html'}),`a-little-card-for-${c.to.replace(/[^a-z0-9]/gi,'-')}.html`);toast('Keepsake downloaded. Device photos are embedded; remote media still needs internet.');
 }
 function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
@@ -119,7 +249,57 @@ function baseOccasionsView(){const events=horizon([...eventsForYear(),...feed,..
   $$('[data-event]').forEach(b=>b.onclick=()=>{const e=events[+b.dataset.event];draft=null;card=blank();card.occasion=e.occasion;draft=card;openBuilder();});
 }
 async function loadFeed(){const selected=country;try{const result=await publicRadar(country,[new Date().getFullYear(),new Date().getFullYear()+1],region);if(selected!==country)return;feed=result.events;regionChoices=result.states||{};radarUpdatedAt=result.generatedAt;feedStatus=result.status;}catch{if(selected!==country)return;feed=[];regionChoices={};feedStatus=country==='KE'?'Holiday service unavailable. Kenya’s local baseline and international observances remain available.':'Country feed unavailable. International observances are shown; national coverage is not loaded.';}if(view==='occasions')occasionsView();}
-function mediaDialog(){capture();const query=[card.flowers,card.scenery].filter(Boolean).join(' ')||'flowers';dialog(`<div class="eyebrow">FIND THEIR LITTLE WORLD</div><h2>Set the <em>scene.</em></h2><form id="media-form"><label>What do they love?<input name="q" value="${esc(query)}" maxlength="90" required></label><div class="field-pair"><label>Source<select name="provider"><option value="commons">Free photo libraries · search now</option><option value="pexels">Pexels</option><option value="pixabay">Pixabay</option></select></label><label>Format<select name="type"><option value="image">Photos</option><option value="video">Video</option></select></label></div><button class="primary full">Search free media ⌕</button></form><p class="small-note">Selected media keeps its creator credit. Check the provider’s licence for your intended use.</p><div id="media-results"></div><div class="share-links"><a class="outline" href="https://www.pexels.com/search/${encodeURIComponent(query)}/" target="_blank" rel="noopener noreferrer">Browse Pexels ↗</a><a class="outline" href="https://pixabay.com/images/search/${encodeURIComponent(query)}/" target="_blank" rel="noopener noreferrer">Browse Pixabay ↗</a></div>`);$('#media-form').onsubmit=async e=>{e.preventDefault();const params=new URLSearchParams(new FormData(e.target));$('#media-results').textContent='Finding a little inspiration…';try{const r=await fetch('/api/media?'+params);const data=await r.json();if(!r.ok)throw Error(data.error);$('#media-results').innerHTML=`<div class="media-grid">${data.results.map((m,i)=>`<button data-media="${i}">${m.thumbnail?`<img src="${esc(safeMedia(m.thumbnail))}" alt="${esc(m.credit)}">`:m.type}<span>${esc(m.credit)} / ${esc(m.provider)}</span></button>`).join('')}</div>`;if(!data.results.length)$('#media-results').textContent='No matches. Try simpler words.';$$('[data-media]').forEach(b=>b.onclick=()=>{const m=data.results[+b.dataset.media];card.mediaUrl=m.url;card.mediaType=m.type;card.credit=m.credit+' / '+m.provider;card.creditUrl=m.sourceUrl;delete card.localPhoto;showBuilder();});}catch(err){$('#media-results').textContent=err.message;}};
+function mediaDialog(){
+  capture();
+  const editing=card;
+  const query=card.mediaQuery||[card.flowers,card.scenery].filter(Boolean).join(' ')||'flowers';
+  dialog(`<h2>Find a photo or video</h2><form id="media-form"><label>Search terms<input name="q" value="${esc(query.slice(0,90))}" maxlength="90" minlength="2" required></label><div class="field-pair"><label>Source<select name="provider"><option value="commons">Free photo libraries</option><option value="pexels">Pexels</option><option value="pixabay">Pixabay</option></select></label><label>Format<select name="type"><option value="image">Photos</option><option value="video">Video</option></select></label></div><button class="primary full" type="submit">Search media</button></form><div id="media-results" aria-live="polite"></div><div class="share-links"><a class="outline" id="browse-pexels" target="_blank" rel="noopener noreferrer">Browse Pexels ↗</a><a class="outline" id="browse-pixabay" target="_blank" rel="noopener noreferrer">Browse Pixabay ↗</a><button class="text-button" id="omit-media">Hide media</button></div>`);
+  const form=$('#media-form'), results=$('#media-results');
+  const {q,provider,type}=form.elements;
+  provider.value=card.mediaProvider||'commons';
+  type.value=card.mediaType||'image';
+  const updateLinks=()=>{
+    const term=encodeURIComponent(q.value.trim());
+    $('#browse-pexels').href='https://www.pexels.com/search/'+(type.value==='video'?'videos/':'')+term+'/';
+    $('#browse-pixabay').href='https://pixabay.com/'+(type.value==='video'?'videos':'images')+'/search/'+term+'/';
+  };
+  updateLinks();
+  form.oninput=updateLinks;
+  type.onchange=()=>{if(type.value==='video'&&provider.value==='commons')provider.value='pexels';};
+  provider.onchange=()=>{if(provider.value==='commons')type.value='image';updateLinks();};
+  $('#omit-media').onclick=()=>{card.mediaHidden=true;showBuilder();capture();};
+  let pending;
+  form.onsubmit=async event=>{
+    event.preventDefault();
+    pending?.abort();
+    const request=new AbortController();
+    pending=request;
+    const params=new URLSearchParams(new FormData(form));
+    editing.mediaQuery=q.value.trim();
+    editing.mediaProvider=provider.value;
+    results.textContent='Searching…';
+    try{
+      const response=await fetch('/api/media?'+params,{signal:request.signal});
+      const data=await response.json();
+      if(!response.ok)throw Error(data.error);
+      if(!form.isConnected||!$('#modal').open||pending!==request||card!==editing)return;
+      const matches=data.results.filter(item=>safeMedia(item.url));
+      if(!matches.length){results.textContent='No matches. Try another search.';return;}
+      results.innerHTML=`<div class="media-grid">${matches.map((item,i)=>{
+        const thumbnail=safeMedia(item.thumbnail);
+        return `<button type="button" data-media="${i}">${thumbnail?`<img src="${esc(thumbnail)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:''}<span>${item.type==='video'?'Video · ':''}${esc(item.credit)} · ${esc(item.provider)}</span></button>`;
+      }).join('')}</div>`;
+      results.querySelectorAll('[data-media]').forEach(button=>button.onclick=()=>{
+        const item=matches[Number(button.dataset.media)];
+        Object.assign(card,{mediaUrl:item.url,mediaType:item.type,credit:item.credit+' / '+item.provider,
+          creditUrl:item.sourceUrl,mediaHidden:false,localPhoto:''});
+        showBuilder();
+        capture();
+      });
+    }catch(error){
+      if(form.isConnected&&pending===request&&!request.signal.aborted)results.textContent=error.message;
+    }
+  };
 }
 function accountDialog(){if(user){dialog(`<div class="eyebrow">YOUR LITTLE CORNER</div><h2>Hello, <em>${esc(user.displayName?.split(' ')[0]||'you')}.</em></h2><p>${esc(user.email)}</p><button class="primary full" id="sync">Sync saved cards ↻</button><button class="outline full" id="signout">Sign out</button><p class="small-note">Guest drafts remain separate. Device photos and personal calendar imports are stored on this device.</p>`);$('#signout').onclick=async()=>{await logout();$('#modal').close();navigate('studio');};$('#sync').onclick=syncCards;return;}
   dialog(`<div class="eyebrow">KEEP YOUR LITTLE MASTERPIECES</div><h2>A place for<br><em>your people.</em></h2><p>${cloud?'Sign in to sync card drafts across devices.':cloudState==='loading'?'Connecting your account services…':esc(cloudError)+' You can retry below.'}</p><button class="outline full" id="google-login" ${!cloud?'disabled':''}>Continue with Google ↗</button>${cloudState==='error'?'<button class="primary full" id="retry-cloud">Reconnect accounts</button>':''}<div class="divider"></div><form id="login-form"><label>Email<input type="email" name="email" autocomplete="email" required></label><label>Password<input type="password" name="password" autocomplete="current-password" minlength="8" required></label><button class="primary full" name="signin">Sign in ↗</button><button class="outline full" type="button" id="create-account">Create account</button><button class="text-button" type="button" id="reset">Forgot password?</button><p id="auth-error" role="alert"></p></form>`);
@@ -128,9 +308,14 @@ function accountDialog(){if(user){dialog(`<div class="eyebrow">YOUR LITTLE CORNE
 }
 async function syncCards(){try{const remote=await cloudList(),all=new Map(cards().map(c=>[c.id,c]));for(const c of remote){const local=all.get(c.id);if(!local||(c.updatedAt||'')>(local.updatedAt||''))all.set(c.id,c);}write(key()+':cards',[...all.values()].slice(0,200));updateAccount();if(view==='saved')collection();toast('Cloud drafts loaded. Use Save to upload local changes.');}catch(e){toast('Could not sync: '+e.message);}}
 function updateAccount(){$('#account-label').textContent=user?.displayName?.split(' ')[0]||user?.email?.split('@')[0]||'Sign in';$('.avatar').textContent=(user?.displayName||user?.email||'U')[0].toUpperCase();$('#saved-count').textContent=cards().length;}
-function navigate(next){view=next;recipient=false;$('.topbar').hidden=false;$('.footer').hidden=false;document.title='Ultra Cards — a little more personal.';$$('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===next));if(next==='studio')studio();if(next==='saved')collection();if(next==='people')peopleView();if(next==='occasions'){occasionsView();if(!feedStatus)loadFeed();}scrollTo(0,0);}
-$$('[data-nav]').forEach(b=>b.onclick=()=>navigate(b.dataset.nav));$('#account').onclick=accountDialog;$('#about').onclick=()=>dialog(`<div class="eyebrow">THOUGHTFULLY MADE</div><h2>The little <em>details.</em></h2><p>Ultra Cards is a free personal card studio. Its 720 looks combine 36 original compositions, five palettes and four type treatments. Classic wording suggestions run locally. The optional Gift Studio sends a brief to Gemini only when you consent. Signature Reveal checkout uses PayPal sandbox.</p><p>Guest drafts and calendar imports are stored in this browser. Connected accounts can sync card drafts to Firebase. Shared links contain the finished card in the URL fragment; anyone with the link can read and forward it, and it cannot be revoked. Private prompt details are excluded.</p><p>Card photographs come from Pexels; each composition credits its source. Fonts come from Google Fonts. You are responsible for rights to your own uploaded media. No personal media from earlier cards is bundled in this public app.</p><p>Calendar dates are planning aids, not an exhaustive official holiday register. Confirm local announcements, regional dates and moon-sighting dates.</p><a href="https://github.com/teddexter0/ultra-cards" target="_blank" rel="noopener noreferrer">Source code ↗</a>`);
-if(location.hash.startsWith('#signature=')){
+function navigate(next){stopScrollMotion();view=next;recipient=false;$('.topbar').hidden=false;$('.footer').hidden=false;document.title='Ultra Cards — a little more personal.';$$('[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===next));if(next==='studio')studio();if(next==='saved')collection();if(next==='people')peopleView();if(next==='occasions'){occasionsView();if(!feedStatus)loadFeed();}scrollTo(0,0);}
+$$('[data-nav]').forEach(b=>b.onclick=()=>navigate(b.dataset.nav));$('#account').onclick=accountDialog;$('#about').onclick=()=>dialog(`<div class="eyebrow">THOUGHTFULLY MADE</div><h2>The little <em>details.</em></h2><p>Ultra Cards is a free personal card studio. Its 720 looks combine 36 original compositions, five palettes and four type treatments. Classic wording suggestions run locally. The optional Gift Studio sends a brief to Gemini only when you consent. Signature Reveal checkout uses PayPal sandbox.</p><p>Guest drafts and calendar imports are stored in this browser. Connected accounts can sync card drafts to Firebase. Short links open a stored copy of the finished card. Anyone with the link can read and forward it. Private prompt details are excluded.</p><p>Card photographs come from Pexels; each composition credits its source. Fonts come from Google Fonts. You are responsible for rights to your own uploaded media. No personal media from earlier cards is bundled in this public app.</p><p>Calendar dates are planning aids, not an exhaustive official holiday register. Confirm local announcements, regional dates and moon-sighting dates.</p><a href="https://github.com/teddexter0/ultra-cards" target="_blank" rel="noopener noreferrer">Source code ↗</a>`);
+const shortPath=/^\/c\/([^/]+)\/?$/.exec(location.pathname);
+if(shortPath){
+  $('#main').innerHTML='<p class="gift-opening" role="status">Opening your card…</p>';
+  loadShortCard(shortPath[1]).then(result=>{card=result;showPreview(true);})
+    .catch(error=>{navigate('studio');toast(error.message);});
+}else if(location.hash.startsWith('#signature=')){
   $('#main').innerHTML='<p class="gift-opening" role="status">Opening their Signature Reveal…</p>';
   getSignature(location.hash.slice(11)).then(result=>{card=result;showPreview(true,true);})
     .catch(error=>{navigate('studio');toast(error.message);});

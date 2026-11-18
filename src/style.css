@@ -121,6 +121,102 @@ html,body{overflow-x:clip}.hero-copy,.hero-showcase,.preview-pane,.builder-form{
   100% {opacity:0;transform:translateY(-2.6rem) scale(1.15) rotate(26deg)}
 }
 .signature-stage #opened-card:has(.still) .signature-stars {display:none}
+
+.design-panel,.phrase-controls{border:1px solid #b9c8ef37;border-radius:18px;padding:14px 17px;margin:14px 0 20px;min-width:0}
+.design-panel summary,.phrase-controls legend{color:#eef2ff;font-weight:650;font-size:.88rem}
+.design-panel summary{cursor:pointer;padding:5px 0}
+.design-panel[open] summary{margin-bottom:12px}
+.design-panel .field-pair,.phrase-controls .field-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}
+.design-panel select,.phrase-controls select{max-width:100%;text-overflow:ellipsis}
+.phrase-grid{display:grid;gap:0 8px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.phrase-controls .small-note{margin:4px 0 12px}
+.phrase-controls #phrase-missing:empty{display:none}
+.recipient-actions .recipient-control{display:inline-flex;align-items:center;justify-content:center;gap:.45em;min-height:46px;padding:12px 18px;border:1px solid #fff;border-radius:100px;background:#fafafa;color:#101013;box-shadow:0 5px 14px #0005;font:600 .84rem var(--sans);transition:transform .22s ease,box-shadow .25s ease,background .25s ease,color .25s ease}
+.recipient-actions .recipient-control-dark{background:#101013;color:#fafafa;border-color:#ffffff85}
+.recipient-actions .recipient-control:focus-visible,.envelope:focus-visible{outline:3px solid #bfcaff;outline-offset:5px}
+.recipient-actions .recipient-control:active{transform:scale(.98)}
+@media(hover:hover){.recipient-actions .recipient-control:hover{background:#e5e5e8;box-shadow:0 10px 26px #0008;transform:translateY(-3px)}.recipient-actions .recipient-control-dark:hover{background:#29292e}}
+
+.recipient-stage .envelope{clip-path:var(--envelope-shape,none);background:var(--envelope-color,#c4cde8);color:var(--envelope-ink,#263456);max-inline-size:min(100%,540px)}
+.recipient-stage .envelope::before,.recipient-stage .envelope::after{background:color-mix(in srgb,var(--envelope-color,#c4cde8) 80%,white)}
+.recipient-stage .envelope .envelope-flap{background:color-mix(in srgb,var(--envelope-color,#c4cde8) 82%,black)}
+.recipient-stage .envelope .envelope-caption,.recipient-stage .envelope .envelope-caption small{color:var(--envelope-ink,#263456)}
+.recipient-stage.signature-stage .envelope{background:var(--envelope-color,#542f43)}
+.recipient-stage.signature-stage .envelope-flap{background:linear-gradient(122deg,#6b4450,#d2a86b 49%,#754451 78%)}
+.recipient-stage.signature-stage .envelope-caption,.recipient-stage.signature-stage .envelope-caption small{color:var(--envelope-ink,#fff0ca)}
+.envelope-seal>span{line-height:1}
+.envelope[data-envelope-motion="both"].unsealed:not(.still){animation:design-unseal var(--preset-time) ease-in both}
+.envelope[data-envelope-motion="both"].unsealed:not(.still) .envelope-caption{animation:var(--preset-animation) var(--preset-time) ease both}
+.envelope[data-envelope-motion="both"].unsealed:not(.still) .envelope-seal{animation:design-spin var(--preset-time) ease both}
+.recipient-stage .envelope[hidden]{display:none}
+.envelope.still,.envelope.still *{transition:none!important}
+@keyframes design-unseal{to{opacity:0;transform:perspective(900px) rotateX(30deg) rotateZ(-8deg) scale(.8)}}
+
+.refined-card{--headline-scale:1;--mark-strength:3}
+.refined-card .design-atmosphere{position:absolute;inset:0;z-index:0;pointer-events:none;background:var(--lighting,none);background-blend-mode:screen}
+.refined-card .design-atmosphere::before{content:"";position:absolute;inset:0;background:var(--backdrop,none)}
+.refined-card .greeting-copy,.refined-card .greeting-picture,.refined-card .greeting-base,.refined-card .greeting-label{position:relative;z-index:2}
+.refined-card .greeting-copy h2{font-size:calc(clamp(2.05rem,7.8vw,5.1rem) * var(--headline-scale));line-height:1.03;letter-spacing:-.047em;text-wrap:balance;margin-bottom:.55em}
+.refined-card:not(.is-mini) .greeting-copy .greeting-note{line-height:1.72}
+.refined-card .greeting-note p{line-height:inherit;text-wrap:pretty}
+.refined-card .headline-finale{color:color-mix(in srgb,var(--accent) 60%,var(--ink));font-style:italic}
+.refined-card.custom-type .headline-finale{font-style:inherit}
+.refined-card.custom-type .greeting-copy h2,.refined-card.custom-type .greeting-note{font-family:var(--custom-type);font-weight:var(--custom-weight);font-style:var(--custom-style)}
+.refined-card.is-mini .greeting-copy h2,#live-card .refined-card .greeting-copy h2{font-size:calc(clamp(1.55rem,3.2vw,2.65rem) * var(--headline-scale))}
+#live-card .refined-card:not(.is-mini) .greeting-note{font-size:.75rem}
+#live-card .refined-card:not(.is-mini) .greeting-copy{padding-top:1rem}
+.refined-card mark{--highlight:var(--mark-color,color-mix(in srgb,var(--accent) 26%,#fff0c0));color:var(--mark-ink,#201729);background:var(--highlight);padding:.01em .09em;border-radius:.16em;font-weight:bolder;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.refined-card.effect-0 mark{box-shadow:0 0 calc(.13em * var(--mark-strength)) var(--highlight)}
+.refined-card.effect-1 mark,.refined-card.effect-7 mark{color:inherit;background:transparent;text-decoration:underline;text-decoration-color:var(--highlight);text-decoration-thickness:calc(.025em * var(--mark-strength));text-underline-offset:.11em}
+.refined-card.effect-7 mark{text-decoration-style:double}
+.refined-card.effect-2 mark,.refined-card.effect-5 mark{background:linear-gradient(112deg,var(--highlight) 25%,#fff9dc 47%,#fff 52%,var(--highlight) 68%);background-size:240% 100%;text-shadow:0 1px #fff3}
+.refined-card.effect-2 mark,.refined-card.effect-5 mark{color:#241830;text-shadow:0 0 calc(.045em * var(--mark-strength)) #fff8}
+.refined-card.effect-3 mark{color:inherit;background:transparent;box-shadow:inset 0 0 0 calc(.025em * var(--mark-strength)) var(--highlight)}
+.refined-card.effect-4 mark{color:inherit;background:transparent;text-shadow:0 0 calc(.16em * var(--mark-strength)) var(--highlight),0 0 .2em var(--highlight)}
+.refined-card.effect-5 mark{box-shadow:0 0 calc(.1em * var(--mark-strength)) var(--highlight)}
+.refined-card.effect-5 mark::after{content:"✦";font-size:.56em;vertical-align:super;margin-inline-start:.15em}
+.refined-card.effect-6 mark{border-radius:0;background:linear-gradient(174deg,transparent 10%,var(--highlight) 11% 86%,transparent 87%);color:var(--mark-ink,#201729);padding-inline:calc(.04em * var(--mark-strength))}
+.refined-card.effect-8 mark{border-radius:1em;box-shadow:0 0 0 calc(.018em * var(--mark-strength)) var(--highlight)}
+.refined-card.effect-9 mark{--dot-spacing:calc(.35em - .032em * var(--mark-strength));background:radial-gradient(circle at 2px 2px,#ffffff9e 1px,transparent 1.5px) 0 0 / var(--dot-spacing) var(--dot-spacing),var(--highlight)}
+.refined-card.opened:is(.effect-2,.effect-5) mark{animation:design-shine 2.7s ease-in-out 2 both}
+@keyframes design-shine{from{background-position:100% 0}to{background-position:0 0}}
+
+.refined-card.opened[data-trigger] .greeting-copy{animation:none}
+.refined-card.opened:is([data-trigger="open"],[data-trigger="both"],[data-trigger="scroll"].in-view) .greeting-copy{animation:var(--preset-animation) var(--preset-time) cubic-bezier(.2,.7,.24,1) both}
+.refined-card.opened[data-trigger="loop"] .greeting-copy{animation:var(--preset-animation) var(--preset-time) ease-in-out 0s infinite alternate}
+.refined-card.opened[data-motion="depth"] .greeting-picture{animation:design-depth var(--preset-time) ease both}
+.refined-card[data-motion="depth"] .greeting-copy{transform-origin:50% 20%}
+@supports(animation-timeline:view()){
+  .refined-card.opened[data-trigger="scroll"][data-motion="depth"] .greeting-copy{animation:design-depth linear both;animation-timeline:view();animation-range:entry 0% entry 75%}
+  .refined-card.opened[data-trigger="scroll"][data-motion="depth"] .greeting-picture{animation:design-depth linear both;animation-timeline:view();animation-range:entry 0% entry 85%}
+}
+@keyframes design-right{0%{opacity:.3;translate:-2.5rem 0}75%{translate:.2rem 0}100%{translate:0 0}}
+@keyframes design-left{0%{opacity:.3;translate:2.5rem 0}75%{translate:-.2rem 0}100%{translate:0 0}}
+@keyframes design-down{0%{opacity:.3;translate:0 -3rem}100%{translate:0 0}}
+@keyframes design-up{0%{opacity:.3;translate:0 3rem}100%{translate:0 0}}
+@keyframes design-depth{0%{opacity:.36;scale:.65;translate:0 2rem;filter:blur(2px)}100%{opacity:1;scale:1;translate:0 0}}
+@keyframes design-spin{0%{opacity:.3;rotate:-1turn;scale:.38}100%{opacity:1;rotate:0deg;scale:1}}
+@keyframes design-flip{0%{opacity:.35;rotate:y -85deg}100%{opacity:1;rotate:y 0deg}}
+@keyframes design-curtain{0%{clip-path:inset(0 50%);opacity:.35}100%{clip-path:inset(0 0);opacity:1}}
+@keyframes design-confetti{0%{opacity:.5;scale:.82}65%{scale:1.025}100%{scale:1}}
+@keyframes design-circus{0%{opacity:.4;translate:0 -2.5rem;rotate:-8deg}60%{translate:0 .3rem;rotate:3deg}80%{translate:0 -.18rem;rotate:-1deg}100%{translate:0 0;rotate:0deg}}
+.design-particles{position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none}
+.design-particles i{position:absolute;left:calc(5% + var(--particle)*6%);top:0;width:7px;height:12px;border-radius:2px;background:hsl(calc(var(--particle)*61deg) 82% 55%);opacity:0}
+[data-motion="circus"] .design-particles i{width:12px;height:12px;border-radius:50%}
+.refined-card.opened:is([data-trigger="open"],[data-trigger="both"],[data-trigger="scroll"].in-view,[data-trigger="loop"]) .design-particles i{animation:design-sprinkle var(--preset-time) calc(23ms * var(--particle)) ease-out both}
+.refined-card.opened[data-trigger="loop"] .design-particles i{animation-iteration-count:infinite}
+@keyframes design-sprinkle{0%{opacity:0;translate:0 -1rem}15%{opacity:1}85%{opacity:.7}100%{opacity:0;translate:calc((var(--particle) - 8)*.7rem) 23rem;rotate:1turn}}
+.refined-card.still *{animation:none!important}
+.greeting.refined-card:focus{outline:none}
+@media(max-width:520px){
+  .design-panel .field-pair,.phrase-controls .field-pair,.phrase-grid{grid-template-columns:minmax(0,1fr)}
+  .recipient-actions .recipient-control{min-height:44px;max-width:100%;text-align:center}
+  .refined-card .greeting-copy h2{font-size:calc(clamp(1.85rem,8.2vw,3.2rem) * var(--headline-scale))}
+}
+@media(prefers-reduced-motion:reduce){
+  .refined-card *,.recipient-stage .envelope,.recipient-stage .envelope *,.recipient-actions .recipient-control{animation:none!important;transition:none!important}
+}
+@media print{.refined-card *{animation:none!important}}
 @media(max-width:600px) {
   .gift-invitation {align-items:stretch;flex-direction:column}
   .gift-upgrade {margin:1rem .75rem}

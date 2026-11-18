@@ -1,4 +1,5 @@
 import {extraScenes} from './catalogue.js';
+import {publicDesign} from './design.js';
 // Original compositions. Old scene indices remain stable so previously sent links still work.
 export const scenes = [
   {id:'botanical',name:'The Sunroom',tag:'Botanical · softly unfolding',title:'You make life\na little brighter.',color:'#e8e8b9',ink:'#34492e',accent:'#467369',motif:'❀',photo:'https://images.pexels.com/photos/931177/pexels-photo-931177.jpeg?auto=compress&cs=tinysrgb&w=1100',credit:'Secret Garden / Pexels',url:'https://www.pexels.com/photo/assorted-color-flowers-931177/',layout:'arch'},
@@ -50,15 +51,15 @@ function baseCompose(c,version=0){
 }
 export const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 export function safeMedia(value,allowData=false){try{const u=new URL(value);return u.protocol==='https:'||(allowData&&/^data:image\/(jpeg|png|webp);base64,/.test(value))?value:'';}catch{return '';}}
-export function publicCard(c){return {v:1,to:String(c.to||'You').slice(0,80),from:String(c.from||'Someone who cares').slice(0,80),occasion:String(c.occasion||'Just because').slice(0,100),title:String(c.title||'A little something for you.').slice(0,240),message:String(c.message||'').slice(0,6000),variant:variant(c.variant).variant,mediaUrl:safeMedia(c.mediaUrl),mediaType:c.mediaType==='video'?'video':'image',credit:String(c.credit||'').slice(0,200),creditUrl:safeMedia(c.creditUrl),color:/^#[0-9a-f]{6}$/i.test(c.color||'')?c.color:'',motion:c.motion!==false};}
+export function publicCard(c){return {v:1,to:String(c.to||'You').slice(0,80),from:String(c.from||'Someone who cares').slice(0,80),occasion:String(c.occasion||'Just because').slice(0,100),title:String(c.title||'A little something for you.').slice(0,240),message:String(c.message||'').slice(0,6000),variant:variant(c.variant).variant,mediaUrl:safeMedia(String(c.mediaUrl||'').slice(0,2000)),mediaType:c.mediaType==='video'?'video':'image',credit:String(c.credit||'').slice(0,200),creditUrl:safeMedia(String(c.creditUrl||'').slice(0,2000)),color:/^#[0-9a-f]{6}$/i.test(c.color||'')?c.color:'',motion:c.motion!==false,mediaHidden:c.mediaHidden===true,design:publicDesign(c)};}
 export function encodeCard(c){return btoa(Array.from(new TextEncoder().encode(JSON.stringify(publicCard(c))),x=>String.fromCharCode(x)).join('')).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');}
 export function decodeCard(s){if(!s||s.length>16000)throw Error('This card link is invalid or too large.');const bytes=Uint8Array.from(atob(s.replaceAll('-','+').replaceAll('_','/')),x=>x.charCodeAt(0));const c=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));if(c.v!==1||typeof c.message!=='string')throw Error('This card link is not supported.');return publicCard(c);}
 
 export function compose(c,version=0){
   const result=baseCompose({...c,to:c.nickname||c.to},version);const parts=[result.message];
-  if(c.admiration?.trim())parts.push('One thing I appreciate about you: '+c.admiration.trim());
-  if(c.sharedMemory?.trim())parts.push('A little memory worth keeping: '+c.sharedMemory.trim());
-  if(c.futureWish?.trim())parts.push('My wish for you: '+c.futureWish.trim());
+  if(c.admiration?.trim())parts.push(`I love this about you — ${c.admiration.trim()}`);
+  if(c.sharedMemory?.trim())parts.push(`One memory I’m keeping — ${c.sharedMemory.trim()}`);
+  if(c.futureWish?.trim())parts.push(`Here’s what I wish for you — ${c.futureWish.trim()}`);
   result.message=parts.join('\n\n');
   if(c.tone==='Poetic'&&!/cancer|aids|get well/i.test(c.occasion||''))result.message+='\n\nMay the days ahead bring a little more light, a little more wonder, and room for the things that make you, you.';
   const avoid=String(c.avoid||'').split(/[,;\n]/).map(s=>s.trim().toLocaleLowerCase()).filter(s=>s.length>2);
